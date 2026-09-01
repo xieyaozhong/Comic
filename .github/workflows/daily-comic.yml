@@ -8,6 +8,12 @@ on:
         required: false
         default: true
         type: boolean
+  push:
+    paths:
+      - "src/**"
+      - "config.yaml"
+      - "requirements.txt"
+      - ".github/workflows/daily-comic.yml"
   schedule:
     # GitHub Actions cron 使用 UTC：00:30 UTC = 台灣 08:30
     - cron: "30 0 * * *"
