@@ -6,7 +6,7 @@ on:
       dry_run:
         description: "不消耗 API 的測試模式"
         required: false
-        default: true
+        default: false
         type: boolean
   push:
     paths:
