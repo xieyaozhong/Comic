@@ -1,13 +1,7 @@
-name: Daily AI Comic
+name: Daily Zero-Credit Comic
 
 on:
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: "不消耗 API 的測試模式"
-        required: false
-        default: false
-        type: boolean
   push:
     paths:
       - "src/**"
@@ -15,20 +9,20 @@ on:
       - "requirements.txt"
       - ".github/workflows/daily-comic.yml"
   schedule:
-    # GitHub Actions cron 使用 UTC：00:30 UTC = 台灣 08:30
+    # 00:30 UTC = 台灣 08:30
     - cron: "30 0 * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: daily-ai-comic
+  group: daily-zero-credit-comic
   cancel-in-progress: false
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,19 +40,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate today's comic
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_TEXT_MODEL: gpt-5.6-luna
-          OPENAI_IMAGE_MODEL: gpt-image-2
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || secrets.OPENAI_API_KEY == '' }}
-        run: |
-          if python src/generate.py; then
-            echo "Live comic generation completed."
-          else
-            echo "::warning::Live AI generation failed; deploying a dry-run fallback comic so the site stays updated."
-            DRY_RUN=true python src/generate.py
-          fi
+      - name: Generate zero-credit comic
+        run: python src/generate.py
 
       - name: Commit generated comic
         run: |
@@ -69,5 +52,5 @@ jobs:
             echo "No changes"
             exit 0
           fi
-          git commit -m "comic: daily update $(date -u +'%Y-%m-%d')"
+          git commit -m "comic: zero-credit daily update $(date -u +'%Y-%m-%d')"
           git push

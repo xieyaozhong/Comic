@@ -1,22 +1,57 @@
-# Daily AI Comic｜每天自動畫一篇漫畫
+# Daily Zero-Credit Comic｜零額度自動漫畫
 
-一個放在 GitHub 上「每天自己寫、自己畫、自己排版、自己發布」的四格漫畫自動化專案。
+這個專案每天自動產生一篇原創四格漫畫，完全不呼叫 OpenAI、Hugging Face 或其他付費 AI API。
 
 ## 自動流程
-GitHub Actions 每天 08:30（台灣時間）啟動 → 選題 → GPT-5.6 Luna 寫四格腳本 → GPT-Image-2 畫四張無文字分鏡 → Pillow 加入繁中對白並合成 → 輸出到 `docs/comics/YYYY-MM-DD.png` → 更新 `docs/latest.png` 與 GitHub Pages。
 
-## 正式生成
-在 Repository → Settings → Secrets and variables → Actions 新增：
+GitHub Actions 每天台灣時間 08:30 啟動 → 依日期建立固定隨機種子 → 從題材與劇情模板組合今日故事 → Pillow 程式化繪製角色、場景、表情與道具 → 自動加入繁中對白 → 產出 `docs/comics/YYYY-MM-DD.png` → 更新 `docs/latest.png` 與 GitHub Pages → bot 自動 commit。
 
-`OPENAI_API_KEY = 你的 OpenAI API key`
+## 成本
 
-排程若找不到 API key，會自動使用 DRY RUN，避免 Actions 整體失敗。
+- OpenAI API：0
+- 圖片 API：0
+- LLM API：0
+- 不需要自己的電腦保持開機
+- 只使用 GitHub Actions + Python + Pillow
 
-## 手動測試
-Actions → Daily AI Comic → Run workflow，保留 `dry_run=true` 可完整測試而不呼叫 AI API。
+## 每日排程
+
+`.github/workflows/daily-comic.yml` 使用：
+
+```yaml
+- cron: "30 0 * * *"
+```
+
+也就是台灣時間每天約 08:30 執行。GitHub 排程可能有數分鐘延遲。
+
+## 手動生成
+
+到 GitHub → Actions → Daily Zero-Credit Comic → Run workflow。
 
 ## GitHub Pages
-Settings → Pages：Source 選 `Deploy from a branch`，Branch 選 `main`，Folder 選 `/docs`。
 
-## 主要設定
-角色、題材與畫風都在 `config.yaml`。文字模型預設 `gpt-5.6-luna`，圖片模型預設 `gpt-image-2`。
+Settings → Pages：
+
+- Source：Deploy from a branch
+- Branch：main
+- Folder：/docs
+
+網站：`https://xieyaozhong.github.io/Comic/`
+
+## 漫畫設定
+
+角色名稱、題材與網站標題在 `config.yaml`。劇情模板與程式繪圖引擎在 `src/generate.py`。
+
+## 產出 metadata
+
+每篇漫畫的 JSON 會標記：
+
+```json
+{
+  "generator": "procedural-python-v2",
+  "api_cost": 0,
+  "dry_run": false
+}
+```
+
+這代表漫畫是正式的零 API 版本，不是 DRY RUN 占位圖。
