@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100">
+<rect width="1600" height="1100" rx="32" fill="#111318"/>
+<rect x="72" y="72" width="1456" height="956" rx="28" fill="#181b21" stroke="#2a2f38" stroke-width="4"/>
+<text x="130" y="250" fill="#f3f4f6" font-size="92" font-family="system-ui, sans-serif" font-weight="700">DAILY AI COMIC</text>
+<text x="130" y="350" fill="#969ca8" font-size="42" font-family="system-ui, sans-serif">每天 08:30 · 自動寫作 · 自動畫圖 · 自動發布</text>
+<g transform="translate(130,470)" fill="none" stroke="#f3f4f6" stroke-width="10"><rect width="285" height="285" rx="22"/><rect x="325" width="285" height="285" rx="22"/><rect x="650" width="285" height="285" rx="22"/><rect x="975" width="285" height="285" rx="22"/></g>
+<text x="130" y="890" fill="#f3f4f6" font-size="50" font-family="system-ui, sans-serif" font-weight="600">等待第一篇漫畫生成</text>
+<text x="130" y="955" fill="#969ca8" font-size="34" font-family="system-ui, sans-serif">GitHub Actions 完成後會自動更新這個頁面</text>
+</svg>
