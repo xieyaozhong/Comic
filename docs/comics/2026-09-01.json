@@ -1,43 +1,35 @@
 {
-  "title": "記憶體不足",
-  "theme": "AI 與日常生活的荒謬瞬間",
-  "summary": "阿曜建立完整提醒系統，唯一忘記的是查看提醒。",
+  "title": "捷徑的捷徑",
+  "theme": "工程師與機器人的小型冒險",
+  "summary": "阿曜想找最快路徑，結果米米直接找了最近的椅子。",
   "panels": [
     {
-      "scene": "desk",
-      "mood": "proud",
-      "dialogue": [
-        "阿曜：所有事情都有記錄，就不會忘。"
-      ],
-      "caption": "方法論"
-    },
-    {
-      "scene": "desk",
+      "scene": "street",
       "mood": "focus",
-      "dialogue": [
-        "阿曜：待辦、日曆、提醒，全同步。"
-      ],
-      "caption": "同步完成"
+      "dialogue": "阿曜：今天去咖啡店，我要走最佳路徑。",
+      "caption": "導航中"
     },
     {
-      "scene": "room",
-      "mood": "worried",
-      "dialogue": [
-        "阿曜：我今天是不是有什麼事？"
-      ],
-      "caption": "晚上"
+      "scene": "street",
+      "mood": "proud",
+      "dialogue": "阿曜：距離、紅綠燈、陰影都算進去。",
+      "caption": "模型完成"
     },
     {
-      "scene": "room",
+      "scene": "cafe",
+      "mood": "surprised",
+      "dialogue": "阿曜：米米，你怎麼先到了？",
+      "caption": "三分鐘後"
+    },
+    {
+      "scene": "cafe",
       "mood": "deadpan",
-      "dialogue": [
-        "米米：有，提醒你『記得看提醒』。"
-      ],
-      "caption": "通知 37 則"
+      "dialogue": "米米：我先去最近的地方，坐著等你。",
+      "caption": "最佳化成功"
     }
   ],
   "date": "2026-09-01",
-  "generator": "procedural-python-v2",
+  "generator": "procedural-python-v3",
   "api_cost": 0,
   "dry_run": false
 }
