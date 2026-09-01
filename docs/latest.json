@@ -1,38 +1,43 @@
 {
-  "title": "今天不要過度自動化",
-  "theme": "把普通小事想得太複雜",
-  "summary": "阿曜想把泡咖啡完全自動化，最後發現米米早已把最重要的部分自動化了。",
+  "title": "記憶體不足",
+  "theme": "AI 與日常生活的荒謬瞬間",
+  "summary": "阿曜建立完整提醒系統，唯一忘記的是查看提醒。",
   "panels": [
     {
-      "scene": "早晨工作桌旁，阿曜盯著咖啡機與筆電，米米在旁邊。",
+      "scene": "desk",
+      "mood": "proud",
       "dialogue": [
-        "阿曜：今天我要把咖啡完全自動化。"
+        "阿曜：所有事情都有記錄，就不會忘。"
       ],
-      "caption": "08:01"
+      "caption": "方法論"
     },
     {
-      "scene": "阿曜快速打程式，米米安靜看著。",
+      "scene": "desk",
+      "mood": "focus",
       "dialogue": [
-        "阿曜：研磨、注水、計時，全交給程式。"
+        "阿曜：待辦、日曆、提醒，全同步。"
       ],
-      "caption": "08:17"
+      "caption": "同步完成"
     },
     {
-      "scene": "咖啡機開始運作，阿曜得意地舉手，米米端著一杯咖啡。",
+      "scene": "room",
+      "mood": "worried",
       "dialogue": [
-        "阿曜：成功！人類終於自由了。"
+        "阿曜：我今天是不是有什麼事？"
       ],
-      "caption": "08:31"
+      "caption": "晚上"
     },
     {
-      "scene": "米米把咖啡遞給阿曜。",
+      "scene": "room",
+      "mood": "deadpan",
       "dialogue": [
-        "米米：其實你昨晚已經叫我今天直接泡。",
-        "阿曜：……那我剛剛在忙什麼？"
+        "米米：有，提醒你『記得看提醒』。"
       ],
-      "caption": "系統：自動化完成"
+      "caption": "通知 37 則"
     }
   ],
   "date": "2026-09-01",
-  "dry_run": true
+  "generator": "procedural-python-v2",
+  "api_cost": 0,
+  "dry_run": false
 }
