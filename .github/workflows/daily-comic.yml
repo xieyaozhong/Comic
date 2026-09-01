@@ -41,7 +41,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Generate zero-credit comic
-        run: python src/generate.py
+        run: python src/run_v3.py
 
       - name: Commit generated comic
         run: |
