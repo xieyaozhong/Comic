@@ -1,15 +1,6 @@
 comic:
-  title: "每日像素宇宙"
-  language: "繁體中文"
-  panels: 4
-  footer: "DAILY COMIC · ZERO API · ZERO CREDITS"
-
-characters:
-  - name: "阿曜"
-    description: "黑色短髮、圓框眼鏡、深色連帽外套，理性但偶爾天然呆"
-  - name: "米米"
-    description: "白色圓滾滾小機器人、藍色眼睛、吐槽系但善良"
-
+  title: "每日一格宇宙"
+  subtitle: "更精緻的零額度自動漫畫站，每天自動更新阿曜與米米的四格日常"
 themes:
   - "AI 與日常生活的荒謬瞬間"
   - "工程師與機器人的小型冒險"
@@ -18,5 +9,3 @@ themes:
   - "把普通小事想得太複雜"
   - "科技讓生活更方便，也更荒謬"
   - "朋友之間一本正經的胡說八道"
-  - "工作效率與過度優化"
-  - "生活中的資料與決策"
