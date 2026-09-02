@@ -1,20 +1,21 @@
 {
-  "title": "簽下去就要假裝交往",
-  "theme": "職場偽戀愛",
-  "summary": "普通企劃答應三個月假戀愛，卻在合約最後一頁看到父親的名字。",
+  "title": "別在離婚後才說愛我",
+  "theme": "成熟戀愛",
+  "summary": "簽完離婚協議那晚，她第一次聽見丈夫說「不要走」；可門外已經有人替她拿好了行李。",
   "tags": [
-    "職場",
-    "戀愛",
-    "契約",
-    "祕密"
+    "大人系",
+    "婚姻",
+    "情感",
+    "鉤子"
   ],
   "date": "2026-09-02",
-  "generator": "webtoon-layout-v4",
+  "generator": "webtoon-zh-trend-v5",
   "layout": [
     "hero",
     "support",
     "clue",
     "tension",
     "reveal"
-  ]
+  ],
+  "genre": "romance"
 }
