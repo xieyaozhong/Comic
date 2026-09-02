@@ -41,7 +41,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Generate webtoon episode
-        run: python src/generate_v4.py
+        run: python src/generate_v5.py
 
       - name: Commit generated comic
         run: |
