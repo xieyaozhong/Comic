@@ -1,35 +1,15 @@
 {
-  "title": "最懂儀式感的人",
-  "theme": "咖啡店裡發生的奇怪事件",
-  "summary": "阿曜研究手沖參數半天，米米只在乎杯子有沒有對齊。",
-  "panels": [
-    {
-      "scene": "cafe",
-      "mood": "focus",
-      "dialogue": "阿曜：水溫 91 度，粉水比 1:15。",
-      "caption": "今日沖煮"
-    },
-    {
-      "scene": "cafe",
-      "mood": "proud",
-      "dialogue": "阿曜：萃取曲線今天一定漂亮。",
-      "caption": "理論滿分"
-    },
-    {
-      "scene": "cafe",
-      "mood": "worried",
-      "dialogue": "阿曜：怎麼喝起來還是普通？",
-      "caption": "沉默 5 秒"
-    },
-    {
-      "scene": "cafe",
-      "mood": "deadpan",
-      "dialogue": "米米：你最在意的是角度，不是味道。",
-      "caption": "儀式感過量"
-    }
+  "title": "凌晨 2:13 的直播間",
+  "theme": "校園祕密直播",
+  "summary": "轉學生誤入一場只有被點名者才能看見的直播，而下一個名字竟然是她。",
+  "tags": [
+    "校園",
+    "懸疑",
+    "直播",
+    "反轉"
   ],
   "date": "2026-09-02",
-  "generator": "procedural-python-v3",
+  "generator": "k-webtoon-trend-v2",
   "api_cost": 0,
   "dry_run": false
 }
