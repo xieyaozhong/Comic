@@ -1,4 +1,4 @@
-name: Daily Zero-Credit Comic
+name: Daily K-Webtoon Comic
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: daily-zero-credit-comic
+  group: daily-k-webtoon-comic
   cancel-in-progress: false
 
 jobs:
@@ -40,8 +40,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate zero-credit comic
-        run: python src/run_v3.py
+      - name: Generate trend-inspired webtoon teaser
+        run: python src/generate.py
 
       - name: Commit generated comic
         run: |
@@ -52,5 +52,5 @@ jobs:
             echo "No changes"
             exit 0
           fi
-          git commit -m "comic: zero-credit daily update $(date -u +'%Y-%m-%d')"
+          git commit -m "comic: k-webtoon daily update $(date -u +'%Y-%m-%d')"
           git push

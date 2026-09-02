@@ -1,77 +1,102 @@
-import hashlib,json,random,shutil
-from datetime import datetime,timezone,timedelta
+import json, random, shutil, hashlib, re, urllib.request
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import yaml
-from PIL import Image,ImageDraw,ImageFont
-R=Path('.'); C=R/'config.yaml'; H=R/'data/history.json'; D=R/'docs'; O=D/'comics'; TZ=timezone(timedelta(hours=8))
-def F(n,b=0):
+from PIL import Image, ImageDraw, ImageFont
+
+R=Path('.'); CFG=R/'config.yaml'; D=R/'docs'; C=D/'comics'; H=R/'data/history.json'; TZ=timezone(timedelta(hours=8))
+W,PH,GAP,HEAD,FOOT=1080,860,38,230,100
+
+STORIES=[
+ {'theme':'校園祕密直播','keys':['thriller','school','drama'],'title':'凌晨 2:13 的直播間','summary':'轉學生誤入一場只有被點名者才能看見的直播，而下一個名字竟然是她。','tags':['校園','懸疑','直播','反轉'],'p':[
+ ('night','徐允：這不是我們學校的社群嗎…？','午夜，手機突然跳出未訂閱直播'),('phone','直播標題：今晚會消失的人','觀眾名單一個個亮起'),('hall','閔夏：妳也收到了？千萬別留言。','只有少數學生看得見'),('stairs','徐允：等等，最後那個名字是我？','畫面切到空無一人的樓梯間'),('hook','匿名訊息：2:30 前，找到「第二支手機」。','下一秒，直播鏡頭對準了徐允身後')]},
+ {'theme':'職場偽戀愛','keys':['romance','drama'],'title':'簽下去就要假裝交往','summary':'普通企劃為了保住工作答應三個月假戀愛，卻在合約最後一頁看到父親的名字。','tags':['職場','戀愛','契約','祕密'],'p':[
+ ('office','海準：三個月，妳會得到升職。','他遞來一份奇怪的合約'),('paper','閔夏：假裝交往也寫進 KPI？','條款 7：不得對外否認關係'),('lift','同事：你們真的在一起了？','消息比公告更快傳遍公司'),('roof','海準：如果現在反悔，已經來不及。','樓下停著三台記者車'),('hook','閔夏：為什麼我爸也簽過這份合約？','最後一頁夾著十五年前的照片')]},
+ {'theme':'迴歸倒數','keys':['action','fantasy','thriller'],'title':'我又回到出事前三天','summary':'事故後醒來，時間回到三天前；唯一記得真相的人，是曾經最討厭他的女孩。','tags':['回歸','懸疑','命運','救贖'],'p':[
+ ('rain','海準：我不是已經死了嗎？','煞車聲仍在耳邊'),('room','手機日期：10 月 14 日','事故前三天'),('cafe','徐允：這次你總算記得我了？','她推出一張車禍照片'),('alley','徐允：第三天，你會害死一個人。','而那個人不是你'),('hook','徐允：今晚 11 點，不要回家。','門外卻站著另一個海準')]},
+ {'theme':'偶像生存戰','keys':['drama','thriller','romance'],'title':'第 7 名不准出道','summary':'練習生在最終排名前收到匿名規則：成為第 7 名的人，會被節目抹去存在。','tags':['偶像','生存賽','競爭','懸念'],'p':[
+ ('stage','導演：最終排名五分鐘後公開。','候場區安靜得異常'),('phone','匿名訊息：別拿第 7 名。','上一個第 7 名已不存在'),('hall','閔夏：妳也看到那條規則？','她的名牌有被撕掉的痕跡'),('stage','徐允：如果故意失誤呢？','耳機傳來自己的聲音：太晚了'),('hook','主持人：第 7 名——','全場燈光突然熄滅')]}
+]
+COL={'night':((26,30,57),(76,88,137)),'phone':((20,22,34),(67,75,96)),'hall':((99,120,147),(190,203,218)),'stairs':((51,54,72),(118,125,149)),'hook':((78,50,88),(164,113,169)),'office':((230,235,246),(199,214,235)),'paper':((225,229,239),(248,233,240)),'lift':((168,173,184),(224,229,239)),'roof':((108,130,166),(204,217,234)),'rain':((48,57,81),(103,117,149)),'room':((215,220,232),(250,245,250)),'cafe':((207,181,154),(248,237,218)),'alley':((75,83,104),(148,160,185)),'stage':((54,38,70),(132,98,171))}
+
+def f(n,b=False):
  p='/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc' if b else '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'; return ImageFont.truetype(p,n)
-def rr(d,b,r,f=None,o=None,w=1): d.rounded_rectangle(b,radius=r,fill=f,outline=o,width=w)
-def G(sz,a,b):
- im=Image.new('RGB',sz); p=im.load(); W,H=sz
- for y in range(H):
-  t=y/max(H-1,1); c=tuple(int(a[i]*(1-t)+b[i]*t) for i in range(3))
-  for x in range(W): p[x,y]=c
+def rr(d,b,r,fill=None,outline=None,w=1): d.rounded_rectangle(b,radius=r,fill=fill,outline=outline,width=w)
+def grad(sz,a,b):
+ im=Image.new('RGB',sz); px=im.load(); w,h=sz
+ for y in range(h):
+  t=y/max(1,h-1); c=tuple(int(a[i]*(1-t)+b[i]*t) for i in range(3))
+  for x in range(w): px[x,y]=c
  return im
-def rng(s): return random.Random(int(hashlib.sha256(s.encode()).hexdigest()[:16],16))
-def hist():
+def wrap(d,s,font,m):
+ out=[]; cur=''
+ for ch in s:
+  if d.textbbox((0,0),cur+ch,font=font)[2]<=m: cur+=ch
+  else: out.append(cur); cur=ch
+ if cur: out.append(cur)
+ return out
+def seed(s): return random.Random(int(hashlib.sha256(s.encode()).hexdigest()[:16],16))
+def history():
  try:return json.loads(H.read_text(encoding='utf-8'))
  except:return []
-def W(d,t,f,m):
- a=[]; s=''
- for ch in t:
-  if d.textbbox((0,0),s+ch,font=f)[2]<=m:s+=ch
-  else:a.append(s);s=ch
- if s:a.append(s)
- return a
-S={
-'AI 與日常生活的荒謬瞬間':('記憶體不足','阿曜建立完整提醒系統，唯一忘記的是查看提醒。',[('desk','proud','阿曜：所有事情都有記錄，就不會忘。','方法論'),('desk','focus','阿曜：待辦、日曆、提醒，全同步。','同步完成'),('room','worried','阿曜：我今天是不是有什麼事？','晚上'),('room','deadpan','米米：有，提醒你「記得看提醒」。','通知 37 則')]),
-'工程師與機器人的小型冒險':('捷徑的捷徑','阿曜想找最快路徑，結果米米直接找了最近的椅子。',[('street','focus','阿曜：今天去咖啡店，我要走最佳路徑。','導航中'),('street','proud','阿曜：距離、紅綠燈、陰影都算進去。','模型完成'),('cafe','surprised','阿曜：米米，你怎麼先到了？','三分鐘後'),('cafe','deadpan','米米：我先去最近的地方，坐著等你。','最佳化成功')]),
-'咖啡店裡發生的奇怪事件':('最懂儀式感的人','阿曜研究手沖參數半天，米米只在乎杯子有沒有對齊。',[('cafe','focus','阿曜：水溫 91 度，粉水比 1:15。','今日沖煮'),('cafe','proud','阿曜：萃取曲線今天一定漂亮。','理論滿分'),('cafe','worried','阿曜：怎麼喝起來還是普通？','沉默 5 秒'),('cafe','deadpan','米米：你最在意的是角度，不是味道。','儀式感過量')]),
-'下班後才開始的第二人生':('晚上才上線','白天的阿曜是上班族，晚上卻把人生排得像副本。',[('room','tired','阿曜：今天終於下班了。','18:31'),('desk','focus','阿曜：先練琴，再寫程式，再畫圖。','第二人生'),('desk','worried','阿曜：怎麼感覺比上班還忙？','行程爆滿'),('room','deadpan','米米：你把休息也排成任務了。','主線：睡覺')]),
-'把普通小事想得太複雜':('早餐決策樹','只是買早餐，阿曜卻做出了像論文一樣的選擇流程。',[('room','focus','阿曜：先做一份早餐決策樹。','07:02'),('street','proud','阿曜：口味、距離、價格、健康，全納入。','變數 12 個'),('store','worried','阿曜：算完了，店休。','結果輸出'),('store','deadpan','米米：所以我先買好蛋餅了。','實務派勝利')]),
-'科技讓生活更方便，也更荒謬':('一鍵完成','阿曜追求一鍵完成，最後多了八個步驟來找那顆鍵。',[('desk','proud','阿曜：我最喜歡一鍵完成。','效率信仰'),('desk','focus','阿曜：先把快速鍵設定到最完美。','設定頁第 8 層'),('desk','worried','阿曜：等等，我把一鍵放哪了？','迷路中'),('desk','deadpan','米米：在「尋找一鍵」捷徑裡。','方便升級')]),
-'朋友之間一本正經的胡說八道':('專業分析','兩個人很認真地討論，最後發現根本只是想喝飲料。',[('street','focus','阿曜：我們要從需求本質切入。','會議開始'),('street','proud','阿曜：先做優先序、風險與成本分析。','非常專業'),('cafe','surprised','米米：所以結論是？','大家沉默'),('cafe','deadpan','阿曜：珍奶半糖少冰。','會議圓滿')])}
-P={'desk':((225,241,255),(190,216,248)),'room':((255,239,220),(242,214,191)),'cafe':((255,232,211),(230,196,168)),'street':((222,244,235),(185,220,212)),'store':((239,232,255),(210,201,239))}
-def B(sc):
- im=G((1024,1024),*P[sc]);d=ImageDraw.Draw(im);d.rectangle((0,760,1024,1024),fill=(238,230,221));d.rectangle((0,755,1024,760),fill=(110,105,102))
- if sc=='desk':rr(d,(70,110,320,280),24,(252,253,255),(92,107,136),5);rr(d,(680,130,940,330),22,'white',(130,150,180),5)
- elif sc=='room':d.rectangle((80,120,390,350),fill=(255,250,246),outline=(145,118,99),width=5);d.rectangle((600,110,940,360),fill=(216,236,255),outline=(128,148,174),width=5)
- elif sc=='cafe':rr(d,(70,105,320,350),18,(91,63,44),(63,44,32),4);d.rectangle((640,120,950,320),fill=(255,249,239),outline=(130,110,96),width=5)
- elif sc=='street':d.rectangle((0,760,1024,1024),fill=(185,190,196));d.rectangle((120,130,330,430),fill=(255,247,237),outline=(125,140,145),width=4);d.rectangle((650,120,940,440),fill=(236,249,255),outline=(125,140,145),width=4)
- else:d.rectangle((65,130,955,370),fill=(255,253,249),outline=(150,145,158),width=4)
- return im
-def Hm(d,x,y,s,m):
- o=(31,31,34);skin=(246,215,188);hood=(56,72,96);rr(d,(x-72*s,y+15*s,x+72*s,y+160*s),28*s,hood,o,int(5*s));rr(d,(x-38*s,y+45*s,x+38*s,y+130*s),18*s,(236,238,243));rr(d,(x-48*s,y+125*s,x-8*s,y+250*s),13*s,(58,67,79),o,int(4*s));rr(d,(x+8*s,y+125*s,x+48*s,y+250*s),13*s,(58,67,79),o,int(4*s));d.ellipse((x-58*s,y-85*s,x+58*s,y+30*s),fill=skin,outline=o,width=int(5*s));d.pieslice((x-66*s,y-100*s,x+66*s,y+35*s),180,360,fill=o);rr(d,(x-46*s,y-20*s,x-4*s,y+10*s),11*s,None,o,int(4*s));rr(d,(x+4*s,y-20*s,x+46*s,y+10*s),11*s,None,o,int(4*s));d.line((x-4*s,y-5*s,x+4*s,y-5*s),fill=o,width=int(3*s));d.line((x-30*s,y-5*s,x-16*s,y-5*s),fill=o,width=int(3*s));d.line((x+16*s,y-5*s,x+30*s,y-5*s),fill=o,width=int(3*s));
- if m=='deadpan':d.line((x-14*s,y+16*s,x+14*s,y+16*s),fill=o,width=int(3*s))
- else:d.arc((x-15*s,y+7*s,x+15*s,y+24*s),0 if m!='worried' else 180,180 if m!='worried' else 360,fill=o,width=int(3*s))
- ay=y+65*s;up=m in ('proud','surprised');d.line((x-65*s,ay,x-120*s,y+(10 if up else 110)*s),fill=hood,width=int(16*s));d.line((x+65*s,ay,x+120*s,y+(5 if up else 110)*s),fill=hood,width=int(16*s))
-def Rb(d,x,y,s):
- o=(45,61,77);a=(91,182,255);rr(d,(x-56*s,y-48*s,x+56*s,y+70*s),27*s,(247,250,254),o,int(5*s));d.rectangle((x-8*s,y-78*s,x+8*s,y-48*s),fill=o);d.ellipse((x-16*s,y-96*s,x+16*s,y-68*s),fill=a,outline=o,width=int(3*s));d.ellipse((x-30*s,y-14*s,x-8*s,y+10*s),fill=a);d.ellipse((x+8*s,y-14*s,x+30*s,y+10*s),fill=a);d.line((x-18*s,y+31*s,x+18*s,y+31*s),fill=o,width=int(4*s));d.line((x-42*s,y+30*s,x-65*s,y+80*s),fill=o,width=int(5*s));d.line((x+42*s,y+30*s,x+65*s,y+80*s),fill=o,width=int(5*s))
-def panel(p,i,out,date):
- im=B(p['scene']);d=ImageDraw.Draw(im);Hm(d,390,490,1.18,p['mood']);Rb(d,750,555,1.12);q=rng(date+str(i))
- for _ in range(10):x,y=q.randint(35,985),q.randint(35,420);r=q.randint(3,7);d.ellipse((x-r,y-r,x+r,y+r),fill=q.choice(['white',(255,235,154),(181,226,255)]))
- rr(d,(42,40,162,104),18,(24,31,43));d.text((84,52),str(i),font=F(34,1),fill='white');im.save(out)
-def compose(story,paths,out,date):
- im=G((1800,2450),(248,250,255),(235,240,249));d=ImageDraw.Draw(im);rr(d,(70,60,1730,360),40,(27,34,49));rr(d,(92,82,1708,338),34,(35,47,70));d.text((130,115),story['title'],font=F(74,1),fill='white');d.text((132,210),story['summary'],font=F(32),fill=(214,224,239));cf=F(28,1);cx=132
- for c in [story['theme'],date,'零額度自動生成']:
-  tw=d.textbbox((0,0),c,font=cf)[2];rr(d,(cx,272,cx+tw+38,320),22,(241,246,255));d.text((cx+19,282),c,font=cf,fill=(32,45,69));cx+=tw+56
- cw=790;ch=900;cap=F(25,1);df=F(31,1);sm=F(24)
- for i,(p,path) in enumerate(zip(story['panels'],paths)):
-  row,col=divmod(i,2);x=90+col*830;y=410+row*940;rr(d,(x+10,y+14,x+cw+10,y+ch+14),34,(220,226,236));rr(d,(x,y,x+cw,y+ch),34,'white',(209,218,232),3);rr(d,(x+24,y+24,x+cw-24,y+540),28,(244,246,250));pi=Image.open(path);pi.thumbnail((742,516));im.paste(pi,(x+24+(742-pi.width)//2,y+24+(516-pi.height)//2));tw=d.textbbox((0,0),p['caption'],font=cap)[2];rr(d,(x+42,y+44,x+tw+86,y+94),20,'white');d.text((x+64,y+56),p['caption'],font=cap,fill=(52,60,80));rr(d,(x+680,y+42,x+748,y+110),22,(28,35,48));d.text((x+708,y+56),str(i+1),font=cap,fill='white');ls=W(d,p['dialogue'],df,680);bh=30+len(ls)*39;rr(d,(x+32,y+570,x+758,y+570+bh),26,(245,248,255) if p['dialogue'].startswith('阿曜') else (238,249,245));yy=y+586
-  for l in ls:d.text((x+52,yy),l,font=df,fill=(28,32,40));yy+=39
-  d.text((x+36,y+848),f"scene · {p['scene']}   mood · {p['mood']}",font=sm,fill=(124,133,146))
- im.save(out,quality=95)
-def page(cfg,meta):
+
+def trends():
+ score={k:1 for k in ['romance','thriller','action','fantasy','drama','school']}; terms={'romance':['romance','로맨스','학원로맨스'],'thriller':['thriller','스릴러'],'action':['action','액션','먼치킨'],'fantasy':['fantasy','판타지','로판','게임판타지'],'drama':['drama','드라마','학원물'],'school':['school','학원','학원로맨스']}
+ for url in ['https://www.webtoons.com/en/ranking/popular','https://comic.naver.com/webtoon?tab=genre']:
+  try:
+   q=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 DailyComicBot/1.0'}); text=urllib.request.urlopen(q,timeout=8).read(450000).decode('utf-8','ignore').lower(); text=re.sub(r'<[^>]+>',' ',text)
+   for k,ws in terms.items(): score[k]+=sum(text.count(w.lower()) for w in ws)
+  except Exception as e: print('trend fallback',type(e).__name__)
+ return score
+def choose(day,hist):
+ used={x.get('theme') for x in hist[-8:]}; pool=[s for s in STORIES if s['theme'] not in used] or STORIES; sc=trends(); weighted=[]
+ for s in pool: weighted += [s]*min(80,1+sum(sc.get(k,1) for k in s['keys']))
+ pick=seed(day).choice(weighted); print('trend',sc,'=>',pick['theme']); return pick
+
+def person(d,x,y,skin=(247,219,198),hair=(48,43,58),clothes=(218,226,242),mood='calm'):
+ d.line((x-22,y+260,x-28,y+420),fill=(55,61,81),width=20); d.line((x+22,y+260,x+28,y+420),fill=(55,61,81),width=20)
+ rr(d,(x-72,y+105,x+72,y+285),30,clothes); d.rectangle((x-13,y+86,x+13,y+122),fill=skin); d.ellipse((x-60,y-20,x+60,y+108),fill=skin); d.pieslice((x-68,y-32,x+68,y+95),180,360,fill=hair); d.rounded_rectangle((x-64,y-4,x+64,y+38),radius=18,fill=hair)
+ ey=y+48
+ if mood=='shock':
+  d.ellipse((x-32,ey-5,x-14,ey+14),fill='white',outline=(20,20,28),width=2); d.ellipse((x+14,ey-5,x+32,ey+14),fill='white',outline=(20,20,28),width=2)
+ else:
+  d.line((x-32,ey+4,x-14,ey+4),fill=(20,20,28),width=3); d.line((x+14,ey+4,x+32,ey+4),fill=(20,20,28),width=3)
+ d.line((x-12,y+78,x+12,y+78),fill=(30,30,35),width=3); d.line((x-70,y+155,x-120,y+215),fill=clothes,width=15); d.line((x+70,y+155,x+120,y+215),fill=clothes,width=15)
+
+def panel(story,i,out,day):
+ scene,dialog,cap=story['p'][i-1]; im=grad((W,PH),*COL[scene]); d=ImageDraw.Draw(im,'RGBA'); r=seed(day+str(i)); dark=i==5
+ if scene in {'night','hall','stairs','office','lift','room'}:
+  for x in (90,330,570,810): d.rectangle((x,120,x+170,350),outline=(255,255,255,95),width=4)
+ if scene in {'rain','alley'}:
+  for _ in range(80):
+   x=r.randint(0,W); y=r.randint(0,PH); d.line((x,y,x-12,y+30),fill=(225,235,255,90),width=2)
+ if scene=='stage':
+  for x in (180,420,660,900): d.polygon([(x,80),(x-55,360),(x+55,360)],fill=(255,255,255,28))
+ if dark: d.rectangle((0,0,W,PH),fill=(55,15,42,55))
+ person(d,300,255,hair=(58,44,62),clothes=(222,227,242),mood='shock' if i in (2,4,5) else 'calm'); person(d,760,275,hair=(46,53,75),clothes=(164,190,222),mood='calm')
+ rr(d,(36,30,235,82),20,(20,22,32,230)); d.text((54,42),f'EP {day[5:].replace("-",".")} · {i}',font=f(24,1),fill='white')
+ rr(d,(46,105,46+d.textbbox((0,0),cap,font=f(25,1))[2]+34,153),20,(255,255,255,235)); d.text((63,116),cap,font=f(25,1),fill=(39,43,57))
+ who,said=dialog.split('：',1) if '：' in dialog else ('旁白',dialog); y1=PH-225; rr(d,(48,y1,W-48,PH-44),26,(29,31,43) if dark else (255,255,255),outline=(80,85,105),w=2); color='white' if dark else (28,30,38); d.text((72,y1+18),who,font=f(28,1),fill=color); yy=y1+58
+ for line in wrap(d,said,f(27),W-150): d.text((72,yy),line,font=f(27),fill=color); yy+=36
+ if dark: d.text((W-250,40),'TO BE\nCONTINUED',font=f(26,1),fill=(255,255,255,210),align='right')
+ im.save(out)
+
+def compose(cfg,story,paths,out,day):
+ total=HEAD+FOOT+len(paths)*PH+(len(paths)-1)*GAP; im=Image.new('RGB',(W,total),(247,247,250)); d=ImageDraw.Draw(im,'RGBA'); h=grad((W,HEAD),(31,34,50),(89,60,108)); im.paste(h,(0,0)); d.text((52,36),cfg['comic']['title'],font=f(48,1),fill='white'); d.text((52,96),story['title'],font=f(38,1),fill=(249,228,255)); d.text((52,150),story['summary'],font=f(23),fill=(238,238,245)); d.text((W-355,38),'  '.join('#'+x for x in story['tags']),font=f(20,1),fill=(232,216,247)); y=HEAD
+ for p in paths: im.paste(Image.open(p).convert('RGB'),(0,y)); y+=PH+GAP
+ d.rectangle((0,total-FOOT,W,total),fill=(20,23,33)); d.text((52,total-66),'短篇只揭露一小段，但每天留下下一個鉤子',font=f(22),fill=(220,225,240)); d.text((W-220,total-66),day,font=f(23,1),fill=(255,220,238)); im.save(out)
+def index(cfg,meta):
  cards=[]
- for p in sorted(O.glob('*.png'),reverse=True)[:48]:
+ for p in sorted(C.glob('*.png'),reverse=True)[:40]:
   try:m=json.loads(p.with_suffix('.json').read_text(encoding='utf-8'))
   except:m={}
-  cards.append(f'<a class="c" href="comics/{p.name}"><img src="comics/{p.name}"><div><b>{m.get("title",p.stem)}</b><span>{p.stem}</span><p>{m.get("summary","")}</p></div></a>')
- t=cfg['comic']['title'];sub=cfg['comic'].get('subtitle','零額度自動漫畫站');n=len(list(O.glob('*.png')));css='body{margin:0;background:radial-gradient(circle at top,#1b2747,#090d18 48%);color:#f1f5ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}.w{max-width:1200px;margin:auto;padding:48px 22px 90px}.h{display:grid;grid-template-columns:1.05fr .95fr;gap:22px}.b{background:#ffffff09;border:1px solid #2a3550;border-radius:28px;box-shadow:0 18px 50px #0004}.i{padding:36px}h1{font-size:clamp(42px,7vw,78px);line-height:.95;margin:0 0 18px}.m{color:#a9b5cf;line-height:1.75}.s{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.s div{background:#ffffff0a;border-radius:18px;padding:18px}.s b{font-size:32px;display:block}.l{display:block;padding:16px;color:inherit;text-decoration:none}.l img{width:100%;border-radius:20px}.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;padding:18px}.c{background:#ffffff08;border:1px solid #ffffff0d;border-radius:22px;overflow:hidden;text-decoration:none;color:inherit}.c img{width:100%;aspect-ratio:1800/2450;object-fit:cover}.c div{padding:14px}.c span{display:block;color:#a9b5cf;font-size:12px;margin:5px 0}.c p{margin:0;color:#d9e0f2;font-size:14px}@media(max-width:900px){.h{grid-template-columns:1fr}}'
- html=f'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>{css}</style><main class="w"><section class="h"><div class="b i"><h1>{t}</h1><p class="m">{sub}<br>Python 程式化角色、場景與對白，API 花費維持 0。</p><div class="s"><div><b>{n}</b>累積篇數</div><div><b>0</b>API 花費</div><div><b>4</b>每篇格數</div></div></div><a class="b l" href="latest.png"><img src="latest.png"><h2>{meta["title"]}</h2><p class="m">{meta["summary"]}</p></a></section><h2>歷史漫畫</h2><section class="b g'>{"".join(cards)}</section></main>';(D/'index.html').write_text(html,encoding='utf-8')
+  tags=''.join(f'<i>#{x}</i>' for x in m.get('tags',[])[:3]); cards.append(f'<a class="c" href="comics/{p.name}"><img src="comics/{p.name}"><div><b>{m.get("title",p.stem)}</b><small>{p.stem}</small><p>{m.get("summary","")}</p>{tags}</div></a>')
+ n=len(list(C.glob('*.png'))); title=cfg['comic']['title']; sub=cfg['comic'].get('subtitle','')
+ css='*{box-sizing:border-box}body{margin:0;background:linear-gradient(#161522,#0b0d14 35%,#11131c);color:#f2f4fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}.w{max-width:1180px;margin:auto;padding:40px 20px 80px}.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:20px}.b{background:#ffffff08;border:1px solid #ffffff14;border-radius:28px;box-shadow:0 18px 55px #0005}.intro{padding:34px}h1{font-size:clamp(44px,7vw,76px);line-height:.95;margin:0}.m{color:#adb6ce;line-height:1.75}.bad{display:flex;gap:9px;flex-wrap:wrap}.bad span,i{background:#efe7ff;color:#352c4d;border-radius:999px;padding:8px 12px;font-size:13px;font-style:normal;font-weight:700}.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:24px}.stat div{background:#ffffff08;border-radius:18px;padding:17px}.stat b{font-size:30px;display:block}.latest{display:block;color:inherit;text-decoration:none;padding:14px}.latest img{width:100%;border-radius:20px}.latest h2{margin:14px 8px 4px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:16px}.c{color:inherit;text-decoration:none;background:#ffffff08;border:1px solid #ffffff10;border-radius:20px;overflow:hidden}.c img{width:100%;height:330px;object-fit:cover;object-position:top}.c div{padding:13px}.c small{display:block;color:#9ea8c1;margin:5px 0}.c p{font-size:14px;line-height:1.55}.c i{display:inline-block;margin:3px;padding:5px 8px;background:#ffffff10;color:#dbe2f5}@media(max-width:850px){.hero{grid-template-columns:1fr}.stat{grid-template-columns:1fr}}'
+ html=f'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>{css}</style><main class="w"><section class="hero"><div class="b intro"><h1>{title}</h1><p class="m">{sub}<br>每天讀取公開熱門頁面，讓題材偏向當下常見的韓國網漫類型；抓不到網路時自動使用本地趨勢池。</p><div class="bad"><span>K-Webtoon Inspired</span><span>Trend-aware</span><span>API 成本 0</span></div><div class="stat"><div><b>{n}</b>連載篇數</div><div><b>5</b>每篇分鏡</div><div><b>0</b>API 花費</div></div></div><a class="b latest" href="latest.png"><img src="latest.png"><h2>{meta["title"]}</h2><p class="m">{meta["summary"]}</p></a></section><h2>最新連載</h2><section class="b grid">{"".join(cards)}</section></main>'; (D/'index.html').write_text(html,encoding='utf-8')
+
 def main():
- cfg=yaml.safe_load(C.read_text(encoding='utf-8'));h=hist();date=datetime.now(TZ).strftime('%Y-%m-%d');ts=cfg.get('themes',list(S));recent={x.get('theme') for x in h[-10:]};av=[x for x in ts if x not in recent] or ts;theme=rng(date).choice(av);title,summary,raw=S[theme];story={'title':title,'theme':theme,'summary':summary,'panels':[{'scene':a,'mood':b,'dialogue':c,'caption':d} for a,b,c,d in raw]};O.mkdir(parents=True,exist_ok=True);tmp=R/'.tmp';shutil.rmtree(tmp,ignore_errors=True);tmp.mkdir();ps=[]
- for i,p in enumerate(story['panels'],1):q=tmp/f'{i}.png';panel(p,i,q,date);ps.append(q)
- out=O/f'{date}.png';compose(story,ps,out,date);m={**story,'date':date,'generator':'procedural-python-v3','api_cost':0,'dry_run':False};(O/f'{date}.json').write_text(json.dumps(m,ensure_ascii=False,indent=2),encoding='utf-8');shutil.copyfile(out,D/'latest.png');(D/'latest.json').write_text(json.dumps(m,ensure_ascii=False,indent=2),encoding='utf-8');h.append({'date':date,'title':title,'theme':theme});H.parent.mkdir(parents=True,exist_ok=True);H.write_text(json.dumps(h[-120:],ensure_ascii=False,indent=2),encoding='utf-8');page(cfg,m);shutil.rmtree(tmp,ignore_errors=True);print('done')
-if __name__=='__main__':main()
+ cfg=yaml.safe_load(CFG.read_text(encoding='utf-8')); day=datetime.now(TZ).strftime('%Y-%m-%d'); hist=history(); story=choose(day,hist); C.mkdir(parents=True,exist_ok=True); tmp=R/'.tmp_panels'; shutil.rmtree(tmp,ignore_errors=True); tmp.mkdir(); paths=[]
+ for i in range(1,6): p=tmp/f'{i}.png'; panel(story,i,p,day); paths.append(p)
+ out=C/f'{day}.png'; compose(cfg,story,paths,out,day); meta={'title':story['title'],'theme':story['theme'],'summary':story['summary'],'tags':story['tags'],'date':day,'generator':'k-webtoon-trend-v2','api_cost':0,'dry_run':False}; (C/f'{day}.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2),encoding='utf-8'); shutil.copyfile(out,D/'latest.png'); (D/'latest.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2),encoding='utf-8'); hist.append({'date':day,'title':meta['title'],'theme':meta['theme']}); H.parent.mkdir(parents=True,exist_ok=True); H.write_text(json.dumps(hist[-120:],ensure_ascii=False,indent=2),encoding='utf-8'); index(cfg,meta); shutil.rmtree(tmp,ignore_errors=True); print('generated',out)
+if __name__=='__main__': main()
