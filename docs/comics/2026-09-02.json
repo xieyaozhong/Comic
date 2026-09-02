@@ -1,15 +1,20 @@
 {
-  "title": "凌晨 2:13 的直播間",
-  "theme": "校園祕密直播",
-  "summary": "轉學生誤入一場只有被點名者才能看見的直播，而下一個名字竟然是她。",
+  "title": "簽下去就要假裝交往",
+  "theme": "職場偽戀愛",
+  "summary": "普通企劃答應三個月假戀愛，卻在合約最後一頁看到父親的名字。",
   "tags": [
-    "校園",
-    "懸疑",
-    "直播",
-    "反轉"
+    "職場",
+    "戀愛",
+    "契約",
+    "祕密"
   ],
   "date": "2026-09-02",
-  "generator": "k-webtoon-trend-v2",
-  "api_cost": 0,
-  "dry_run": false
+  "generator": "webtoon-layout-v4",
+  "layout": [
+    "hero",
+    "support",
+    "clue",
+    "tension",
+    "reveal"
+  ]
 }
